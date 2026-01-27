@@ -19,8 +19,7 @@ def get_files_info(working_directory, directory="."):
         for item in target_dir_list:
             size = os.path.getsize(os.path.join(target_directory, item))
             isDir = os.path.isdir(os.path.join(target_directory, item))
-            current_data = f"- {item}: file_size={size}, is_dir={isDir}"
-            directory_data.append(current_data)
+            directory_data.append(f"- {item}: file_size={size}, is_dir={isDir}")
         return "\n".join(directory_data)
     
     except Exception as e:
