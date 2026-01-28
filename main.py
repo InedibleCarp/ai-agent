@@ -26,42 +26,54 @@ def main():
     
     generate_content(client, messages, args.verbose)
     
+    
+    
 def generate_content(client, messages, verbose):
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=messages,
-        config=types.GenerateContentConfig(
-            tools=[available_functions], system_instruction=system_prompt),
-    )
-    
-    if not response.usage_metadata:
-        raise RuntimeError("failed API request.")
-    
-    if verbose:
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+    for _ in range(20):
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=messages,
+            config=types.GenerateContentConfig(
+                tools=[available_functions], system_instruction=system_prompt),
+        )
         
+        if not response.usage_metadata:
+            raise RuntimeError("failed API request.")
         
-    if response.function_calls:
-        function_results_list = []
-        for function_call in response.function_calls:
-            function_call_result = call_function(function_call, verbose)
+        if verbose:
+            print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
             
-            if (
-                not function_call_result.parts
-                or not function_call_result.parts[0].function_response
-                or not function_call_result.parts[0].function_response.response
-            ):
-                raise RuntimeError(f"Empty function response for {function_call.name}")
-                        
-            if verbose:
-                resp_dict = function_call_result.parts[0].function_response.response
-                print(f"-> {resp_dict.get('result')}")
+        if response.candidates:
+            for candidate in response.candidates:
+                messages.append(candidate)
+            
+            
+        if response.function_calls:
+            function_results_list = []
+            for function_call in response.function_calls:
+                function_call_result = call_function(function_call, verbose)
                 
-            function_results_list.append(function_call_result.parts[0])
+                if (
+                    not function_call_result.parts
+                    or not function_call_result.parts[0].function_response
+                    or not function_call_result.parts[0].function_response.response
+                ):
+                    raise RuntimeError(f"Empty function response for {function_call.name}")
+                            
+                if verbose:
+                    resp_dict = function_call_result.parts[0].function_response.response
+                    print(f"-> {resp_dict.get('result')}")
+                    
+                function_results_list.append(function_call_result.parts[0])
+                messages.append(types.Content(role="user", parts=function_results_list))
 
-    else:
-        print(response.text)
+        else:
+            print(f"Final Response:\n{response.text}")
+            return
+        
+    print("Error: Maximum iterations reached.")
+    exit(1)
 
 
 if __name__ == "__main__":
