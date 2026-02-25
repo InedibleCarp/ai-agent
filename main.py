@@ -66,7 +66,8 @@ def generate_content(client, messages, verbose):
                     print(f"-> {resp_dict.get('result')}")
                     
                 function_results_list.append(function_call_result.parts[0])
-                messages.append(types.Content(role="user", parts=function_results_list))
+
+            messages.append(types.Content(role="user", parts=function_results_list))
 
         else:
             print(f"Final Response:\n{response.text}")
